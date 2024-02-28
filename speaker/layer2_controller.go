@@ -107,19 +107,19 @@ func (c *layer2Controller) ShouldAnnounce(l log.Logger, name string, toAnnounce 
 	}
 
 	// we select the nodes with at least one matching l2 advertisement
-	fmt.Println("c.sList.UsableSpeakers() : " + createStr(c.sList.UsableSpeakers()))
-	fmt.Println("pool : " + createStr(*pool))
-	fmt.Println("nodes : ")
-	fmt.Println(createKeyValuePairs(nodes))
+	level.Info(l).Log("msg", "c.sList.UsableSpeakers() : "+createStr(c.sList.UsableSpeakers()))
+	level.Info(l).Log("msg", "pool : "+createStr(*pool))
+	level.Info(l).Log("msg", "nodes : ")
+	level.Info(l).Log("msg", createKeyValuePairs(nodes))
 	forPool := speakersForPool(c.sList.UsableSpeakers(), pool, nodes)
-	fmt.Println("forPool : " + createStr(forPool))
+	level.Info(l).Log("msg", "forPool : "+createStr(forPool))
 	var availableNodes []string
 	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
 		availableNodes = usableNodes(eps, forPool)
 	} else {
 		availableNodes = nodesWithActiveSpeakers(forPool)
 	}
-	fmt.Println("availableNodes : " + createStr(availableNodes))
+	level.Info(l).Log("msg", "availableNodes : "+createStr(availableNodes))
 
 	if len(availableNodes) == 0 {
 		level.Debug(l).Log("event", "skipping should announce l2", "service", name, "reason", "no available nodes")
