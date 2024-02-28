@@ -17,6 +17,8 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
+	"fmt"
 	"net"
 	"sort"
 
@@ -77,6 +79,22 @@ func usableNodes(eps []discovery.EndpointSlice, speakers map[string]bool) []stri
 	return ret
 }
 
+func createStr(obj interface{}) string {
+	b, err := json.Marshal(obj)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
+}
+
+func createKeyValuePairs(m map[string]*v1.Node) string {
+	b := new(bytes.Buffer)
+	for key, value := range m {
+		fmt.Fprintf(b, "%s=\"%s\"\n", key, value.Name)
+	}
+	return b.String()
+}
+
 func (c *layer2Controller) ShouldAnnounce(l log.Logger, name string, toAnnounce []net.IP, pool *config.Pool, svc *v1.Service, eps []discovery.EndpointSlice, nodes map[string]*v1.Node) string {
 	if !activeEndpointExists(eps) { // no active endpoints, just return
 		level.Debug(l).Log("event", "shouldannounce", "protocol", "l2", "message", "failed no active endpoints", "service", name)
@@ -89,13 +107,19 @@ func (c *layer2Controller) ShouldAnnounce(l log.Logger, name string, toAnnounce 
 	}
 
 	// we select the nodes with at least one matching l2 advertisement
+	fmt.Println("c.sList.UsableSpeakers() : " + createStr(c.sList.UsableSpeakers()))
+	fmt.Println("pool : " + createStr(*pool))
+	fmt.Println("nodes : ")
+	fmt.Println(createKeyValuePairs(nodes))
 	forPool := speakersForPool(c.sList.UsableSpeakers(), pool, nodes)
+	fmt.Println("forPool : " + createStr(forPool))
 	var availableNodes []string
 	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
 		availableNodes = usableNodes(eps, forPool)
 	} else {
 		availableNodes = nodesWithActiveSpeakers(forPool)
 	}
+	fmt.Println("availableNodes : " + createStr(availableNodes))
 
 	if len(availableNodes) == 0 {
 		level.Debug(l).Log("event", "skipping should announce l2", "service", name, "reason", "no available nodes")
