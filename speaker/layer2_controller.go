@@ -111,7 +111,7 @@ func (c *layer2Controller) ShouldAnnounce(l log.Logger, name string, toAnnounce 
 	level.Info(l).Log("msg", "pool : "+createStr(*pool))
 	level.Info(l).Log("msg", "nodes : ")
 	level.Info(l).Log("msg", createKeyValuePairs(nodes))
-	forPool := speakersForPool(c.sList.UsableSpeakers(), pool, nodes)
+	forPool := speakersForPool(l, c.sList.UsableSpeakers(), pool, nodes)
 	level.Info(l).Log("msg", "forPool : "+createStr(forPool))
 	var availableNodes []string
 	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
@@ -229,17 +229,20 @@ func poolMatchesNodeL2(pool *config.Pool, node string) bool {
 	return false
 }
 
-func speakersForPool(speakers map[string]bool, pool *config.Pool, nodes map[string]*v1.Node) map[string]bool {
+func speakersForPool(l log.Logger, speakers map[string]bool, pool *config.Pool, nodes map[string]*v1.Node) map[string]bool {
 	res := map[string]bool{}
 	for s := range speakers {
+		level.Info(l).Log("msg", "s : "+s, " k8snodes.IsNetworkUnavailable(nodes[s]) : "+createStr(k8snodes.IsNetworkUnavailable(nodes[s])))
 		if k8snodes.IsNetworkUnavailable(nodes[s]) {
 			continue
 		}
 
+		level.Info(l).Log("msg", "s : "+s, " k8snodes.IsNodeExcludedFromBalancers(nodes[s]) : "+createStr(k8snodes.IsNodeExcludedFromBalancers(nodes[s])))
 		if k8snodes.IsNodeExcludedFromBalancers(nodes[s]) {
 			continue
 		}
 
+		level.Info(l).Log("msg", "s : "+s, " poolMatchesNodeL2(pool, s) : "+createStr(poolMatchesNodeL2(pool, s)))
 		if poolMatchesNodeL2(pool, s) {
 			res[s] = true
 		}
